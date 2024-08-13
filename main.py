@@ -1,53 +1,47 @@
 import asyncio
 import logging
 import sys
+import os
 from os import getenv
-from dotenv import load_dotenv
 
-from aiogram import Bot, Dispatcher, html
+import aioschedule
+from dotenv import load_dotenv
+from aiogram import Bot, Dispatcher, types
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.filters import CommandStart
-from aiogram.types import Message
 
 load_dotenv()
 TOKEN = getenv("BOT_TOKEN")
+bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
+media_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'media')
+ext = ['.jpg', '.jpeg']
 
 
-@dp.message(CommandStart())
-async def command_start_handler(message: Message) -> None:
-    """
-    This handler receives messages with `/start` command
-    """
-    # Most event objects have aliases for API methods that can be called in events' context
-    # For example if you want to answer to incoming message you can use `message.answer(...)` alias
-    # and the target chat will be passed to :ref:`aiogram.methods.send_message.SendMessage`
-    # method automatically or call API method directly via
-    # Bot instance: `bot.send_message(chat_id=message.chat.id, ...)`
-    await message.answer(f"Hello, {html.bold(message.from_user.full_name)}!")
+async def photo():
+    for root, dirs, files in os.walk(media_dir):
+        print(f'root: {root},\n dirs: {dirs},\n files: {files}')
+        for file in files:
+            if file.lower().endswith(tuple(ext)) and '~$' not in file:
+                photo_file = os.path.join(media_dir, file)
+                await bot.send_photo(chat_id=-1002205937294, photo=types.FSInputFile(photo_file))
+                os.remove(os.path.join(media_dir, file))
 
 
-@dp.message()
-async def echo_handler(message: Message) -> None:
-    """
-    Handler will forward receive a message back to the sender
+async def scheduler():
+    aioschedule.every(10).seconds.do(photo)
+    while True:
+        await aioschedule.run_pending()
+        await asyncio.sleep(0.1)
 
-    By default, message handler will handle all message types (like a text, photo, sticker etc.)
-    """
-    try:
-        # Send a copy of the received message
-        await message.send_copy(chat_id=message.chat.id)
-    except TypeError:
-        # But not all the types is supported to be copied so need to handle it
-        await message.answer("Nice try!")
+
+async def on_startup():
+    asyncio.create_task(scheduler())
+    await asyncio.sleep(0.1)
 
 
 async def main() -> None:
-    # Initialize Bot instance with default bot properties which will be passed to all API calls
-    bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-
-    # And the run events dispatching
+    dp.startup.register(on_startup)
     await dp.start_polling(bot)
 
 
