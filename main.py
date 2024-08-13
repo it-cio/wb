@@ -12,6 +12,7 @@ from aiogram.enums import ParseMode
 
 load_dotenv()
 TOKEN = getenv("BOT_TOKEN")
+ID = getenv("CHAT_ID")
 bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
 media_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'media')
@@ -23,7 +24,7 @@ async def photo():
         for file in files:
             if file.lower().endswith(tuple(ext)) and '~$' not in file:
                 photo_file = os.path.join(media_dir, file)
-                await bot.send_photo(chat_id=-1002205937294, photo=types.FSInputFile(photo_file))
+                await bot.send_photo(chat_id=ID, photo=types.FSInputFile(photo_file))
                 os.remove(os.path.join(media_dir, file))
 
 
