@@ -20,7 +20,6 @@ ext = ['.jpg', '.jpeg']
 
 async def photo():
     for root, dirs, files in os.walk(media_dir):
-        print(f'root: {root},\n dirs: {dirs},\n files: {files}')
         for file in files:
             if file.lower().endswith(tuple(ext)) and '~$' not in file:
                 photo_file = os.path.join(media_dir, file)
@@ -29,7 +28,7 @@ async def photo():
 
 
 async def scheduler():
-    aioschedule.every(10).seconds.do(photo)
+    aioschedule.every(1).to(3).seconds.do(photo)
     while True:
         await aioschedule.run_pending()
         await asyncio.sleep(0.1)
